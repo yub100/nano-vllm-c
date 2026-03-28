@@ -28,9 +28,9 @@ class RMSNorm(nn.Module):
     
     def forward(self, x: torch.Tensor, residual: torch.Tensor | None = None):
         if residual is None:
-            return self.rms_forward(x, residual)
+            return self.rms_forward(x)
         else:
-            return self.add_rms_forward(x)
+            return self.add_rms_forward(x, residual)
 
 
         

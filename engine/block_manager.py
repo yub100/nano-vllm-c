@@ -111,8 +111,6 @@ class BlockManager:
 
             seq.block_table.append(block_id)
             i += 1
-        if len(seq.block_table) == seq.num_blocks:
-            seq.is_decode = True
 
     def deallocate(self, seq: Sequence):
         for block_id in reversed(seq.block_table):

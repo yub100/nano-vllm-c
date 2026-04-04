@@ -54,13 +54,19 @@ class RotaryEmbedding(nn.Module):
         key = apply_rotary_emb(key, cos, sin)
         return query, key
 
-@lru_cache(1)
 def get_rope(
     head_size: int,
     rotary_dim: int,
-    max_position_embeddings: int,
+    max_position: int,
     base: float,
-    rope_scaling: dict | None = None
+    rope_scaling: dict | None = None,
 ):
-    rotary_emb = RotaryEmbedding(head_size, rotary_dim, max_position_embeddings, base)
+    # if rope_scaling is not None:
+    #     rope_type = rope_scaling.get("rope_type", rope_scaling.get("type"))
+    #     factor = rope_scaling.get("factor", 1.0)
+    #     # Treat the default/no-op HF config normalization as plain RoPE.
+    #     if rope_type not in (None, "default") or factor != 1.0:
+    #         raise NotImplementedError(f"Unsupported rope_scaling: {rope_scaling}")
+    rotary_emb = RotaryEmbedding(head_size, rotary_dim, max_position, base)
     return rotary_emb
+

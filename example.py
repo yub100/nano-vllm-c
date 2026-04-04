@@ -5,15 +5,11 @@ from transformers import AutoTokenizer
 
 
 def main():
-    path = os.path.expanduser("/gz-data/model/qwen3-0.6B")
-    tokenizer = AutoTokenizer.from_pretrained(path)
-    llm = LLM(path, enforce_eager=True, tensor_parallel_size=1)
-    sampling_params = SamplingParams(temperature=0.7, max_token=256)
-    path = os.path.expanduser("/gz-data/model/Qwen3-0.6B/")
+    path = os.path.expanduser("/gz-data/model/Qwen3-0.6B")
     tokenizer = AutoTokenizer.from_pretrained(path)
     llm = LLM(path, enforce_eager=False, tensor_parallel_size=1)
+    sampling_params = SamplingParams(temperature=0.7, max_token=256)
 
-    sampling_params = SamplingParams(temperature=0.6, max_tokens=256)
     base_prompts = [
         "Introduce yourself and summarize the main capabilities of a lightweight LLM inference engine.",
         "List all prime numbers within 100 and briefly explain how to verify primality.",
@@ -38,8 +34,8 @@ def main():
 
     for prompt, output in zip(prompts, outputs):
         print("\n")
-        print(f"Prompt: {prompt}")
-        print(f"answer: {output}")
+        print(f"Prompt: {prompt!r}")
+        print(f"Completion: {output['text']!r}")
 
 if __name__ == "__main__":
     main()

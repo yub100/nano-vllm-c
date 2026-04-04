@@ -48,8 +48,6 @@ class Scheduler:
                     break
 
                 self.block_manager._append(seq)
-                if len(seq.block_table) == seq.num_blocks:
-                    seq.is_decode = True
             # decode
             else:
                 while not self.block_manager.can_append(seq):
@@ -83,8 +81,6 @@ class Scheduler:
             num_batched_tokens += chunk_size
             num_seqs += 1
             seq.status = SequenceStatus.RUNNING
-            if len(seq.block_table) == seq.num_blocks:
-                seq.is_decode = True
             self.waiting.popleft()
 
         self.running.extend(seqs)
@@ -111,7 +107,11 @@ class Scheduler:
 
     def postprocess(self, scheduledBatch: list[Sequence], token_ids: list[int]):
         for seq, token_id in zip(scheduledBatch, token_ids):
-            seq.num_computed_tokens += seq.chunk_size
+            chunk_size = seq.chunk_size
+            finished_prefill = (not seq.is_decode) and (seq.num_computed_tokens + chunk_size == seq.num_tokens)
+            seq.num_computed_tokens += chunk_size
+            if finished_prefill:
+                seq.is_decode = True
             if seq.is_decode:
                 seq.append_token(token_id)
                 if (not seq.ignore_eos and token_id == self.eos) or seq.num_completion_tokens == seq.max_tokens:

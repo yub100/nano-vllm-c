@@ -91,7 +91,7 @@ class LLMEngine:
         if use_tqdm:
             pbar = tqdm(total=len(prompts), desc="genrating", dynamic_ncols=True)
         if not isinstance(sampling_params, list):
-            sampling_params = sampling_params * len(prompts)
+            sampling_params = [sampling_params] * len(prompts)
         
         # break the prompts into individual tasks and put them to scheduler
         for prompt, sp in zip(prompts, sampling_params):

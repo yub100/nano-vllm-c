@@ -175,6 +175,7 @@ class ModelRunner:
                     seq.block_table[token_idx // self.block_size] * self.block_size + token_idx % self.block_size
                     for token_idx in range(chunk_start_idx, end)
                 )
+            # used for warm up
             else:
                 slot_mapping.extend([-1] * num_tokens)
 
@@ -241,7 +242,8 @@ class ModelRunner:
         reset_context()
         return token_ids
 
-    # graph and it's variable likes "input_ids", "positions" and so on can use in Multi-round batch
+    # graph and it's variable likes "input_ids", "positions" and so on can use in Multi-round batch.
+    # one instance corresponds to a graph, this engine possesses only one graph which used for decode.
     @torch.inference_mode() # 
     def capture_cudagraph(self):
         config = self.config
@@ -267,7 +269,7 @@ class ModelRunner:
 
         self.graph_pool = None
         for bs in reversed(self.graph_bs):
-            # create a new graph
+            # initial and warm up
             graph = torch.cuda.CUDAGraph()
             set_context(1, config.max_model_len,
                         cu_seqlens_q[:bs + 1], cu_seqlens_k[:bs + 1], context_lens[:bs],

@@ -59,18 +59,11 @@ class BlockManager:
         self.used_block_ids.remove(block_id)
         self.free_block_ids.append(block_id)
 
-    # only used in prefill period
-    # it's logic kvcache
-    # Divide seq into blocks and allocate physical block, write the full block to hash_to_block_id.
-    # Actually, the block store cache, due to q and k/v have a one-to-one relationship. Thus, can allocate cache for every token(q) indavance.
+    # only used in first prefill period
     def allocate(self, seq: Sequence):
-        cache_miss = False
-        num_need_append_block = (seq.chunk_size + self.block_size - 1) // self.block_size
         num_all_blocks = seq.num_blocks
-        i = 0
 
-        while cache_miss == False and i < num_all_blocks:
-        # for i in range(num_allocated_blocks, num_allocated_blocks + num_need_append_block):
+        for i in range(num_all_blocks):
             token_ids = seq.block(i)
 
             prefix = self.blocks[seq.block_table[-1]].hash if len(seq.block_table) > 0 else -1
@@ -80,29 +73,19 @@ class BlockManager:
             # if key=h not exist, return -1
             block_id = self.hash_to_block_id.get(h, -1)
 
-            # miss or dirty read
-            # once cache_miss = True, all subsequent block will miss.
+            # cache miss
+            # once cache_miss, all subsequent block will miss.
             if block_id == -1 or self.blocks[block_id].token_ids != token_ids:
-                cache_miss = True
                 break
+            
+            # hit means this block already exist and have cache, so update num_cached_tokens
+            seq.num_computed_tokens += self.block_size
 
-            # allocate an cache is two step, if cache_miss is true,
-            # we just allocate block, don't update cache.thus don't update num_cached_tokens
-            if cache_miss:
-                # obtain physical block to store kv
-                block_id = self.free_block_ids[0]
-
-                # obtain physical block
-                block = self._allocate_block(block_id)
+            if block_id in self.used_block_ids:
+                block = self.blocks[block_id]
+                block.ref_count += 1
             else:
-                # hit means this block already exist and have cache, so update num_cached_tokens
-                seq.num_computed_tokens += self.block_size
-
-                if block_id in self.used_block_ids:
-                    block = self.blocks[block_id]
-                    block.ref_count += 1
-                else:
-                    block = self._allocate_block(block_id)
+                block = self._allocate_block(block_id)
 
             # if block is full
             if h != -1:
@@ -110,7 +93,6 @@ class BlockManager:
                 self.hash_to_block_id[h] = block_id
 
             seq.block_table.append(block_id)
-            i += 1
 
     def deallocate(self, seq: Sequence):
         for block_id in reversed(seq.block_table):
